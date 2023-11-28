@@ -87,7 +87,7 @@ class Transformer(nn.Module):
         :param src: 入力トークン列(Tensor) [batch * max_length]
         :return: マスク(Tensor) [batch * 1 * 1 * max_length]
         """
-        src_mask = (src != self.src_pad_idx).unsqueeze(1).unsqueeze(2)
+        src_mask = (src == self.src_pad_idx).unsqueeze(1).unsqueeze(2)
         return src_mask
 
     def make_trg_mask(self, trg: Tensor) -> Tensor:
@@ -98,7 +98,7 @@ class Transformer(nn.Module):
         :return: [batch * 1 * max_length * max_length]
         """
         # trg_pad_mask -> [batch * 1 * max_length * 1]
-        trg_pad_mask = (trg != self.trg_pad_idx).unsqueeze(1).unsqueeze(3)
+        trg_pad_mask = (trg == self.trg_pad_idx).unsqueeze(1)
         trg_len = trg.shape[1]
         # 入力長に応じた単位行列を作成
         identity_mat = torch.ones(trg_len, trg_len)
@@ -109,7 +109,10 @@ class Transformer(nn.Module):
         # True/FalseのTensorに変換
         trg_sub_mask = (trg_sub_mask == 0).to(self.device)
         # PADマスクと未知マスクのAndをとる
-        trg_mask = trg_pad_mask & trg_sub_mask
+        trg_mask = trg_pad_mask | trg_sub_mask
+
+        # MultiHead用に次元追加しとく
+        trg_mask = trg_mask.unsqueeze(1)
         return trg_mask
 
     def get_encoder(self) -> Encoder:
@@ -119,7 +122,7 @@ class Transformer(nn.Module):
         """
         return self.encoder
 
-    def get_encoder(self) -> Decoder:
+    def get_decoder(self) -> Decoder:
         """
         Decoderモデルを取得する
         :return: デコーダーモデル
