@@ -8,21 +8,18 @@
 import torch.nn as nn
 from torch import Tensor
 
-import sys
-sys.path.append('..')
-aaaa = sys.path
-from script.blocks.emmbedding_block import TransformerEmbeddingBlock
-from script.blocks.encoder_block import EncoderBlock
+from blocks.emmbedding_block import TransformerEmbeddingBlock
+from blocks.encoder_block import EncoderBlock
 
 
 class Encoder(nn.Module):
     """
     エンコーダーモデル
     """
-    def __init__(self, enc_voc_size, max_len, d_model, ffn_hidden, n_head, n_layers, drop_prob, device):
+    def __init__(self, enc_voc_size: int, input_len: int, d_model: int, ffn_hidden: int, n_head: int, n_layers: int, drop_prob: float, device: str):
         """
         :param enc_voc_size: 語彙サイズ
-        :param max_len: 入力長
+        :param input_len: 入力長
         :param d_model: 次元数
         :param ffn_hidden: FFNの隠れ層
         :param n_head: ヘッド数
@@ -32,7 +29,8 @@ class Encoder(nn.Module):
         """
         super(Encoder, self).__init__()
         # 埋め込みブロック
-        self.emb = TransformerEmbeddingBlock(vocab_size=enc_voc_size, model_dim=d_model, input_length=max_len, drop_prob=drop_prob, device=device)
+        self.emb = TransformerEmbeddingBlock(vocab_size=enc_voc_size, model_dim=d_model, input_length=input_len,
+                                             drop_prob=drop_prob, device=device)
 
         # Encoderブロックをレイヤーの数だけ作成
         self.layers = nn.ModuleList([EncoderBlock(d_model=d_model,

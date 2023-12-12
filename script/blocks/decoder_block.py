@@ -26,12 +26,12 @@ class DecoderBlock(nn.Module):
         """
         super(DecoderBlock, self).__init__()
         # Scale dot Attentionレイヤー(self attention)
-        self.layer_self_attention = MultiHeadAttentionBlock(d_model=d_model, n_head=n_head, dropout_rate=drop_prob)
+        self.layer_self_attention = MultiHeadAttentionBlock(d_model=d_model, n_head=n_head)
         self.layer_norm1 = LayerNorm(d_model=d_model)
         self.layer_dropout1 = nn.Dropout(p=drop_prob)
 
         # Scale dot Attentionレイヤー(source-target attention)
-        self.layer_src_trg_attention = MultiHeadAttentionBlock(d_model=d_model, n_head=n_head, dropout_rate=drop_prob)
+        self.layer_src_trg_attention = MultiHeadAttentionBlock(d_model=d_model, n_head=n_head)
         self.layer_norm2 = LayerNorm(d_model=d_model)
         self.layer_dropout2 = nn.Dropout(p=drop_prob)
 

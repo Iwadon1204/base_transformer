@@ -1,5 +1,10 @@
-import math
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+@autor Iwadon
+"""
 
+import math
 import torch
 from torch import nn, Tensor
 
@@ -13,14 +18,12 @@ class ScaleDotProductAttention(nn.Module):
         super(ScaleDotProductAttention, self).__init__()
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor = None, e: float = 1e-12):
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor = None):
         """
-
         :param q: Query[バッチサイズ, Query長, 次元数]
         :param k: key[バッチサイズ, ヘッド数, key長, 次元数]
         :param v: Value[バッチサイズ, value長, 次元数]
         :param mask: attention mask マスクし、attention weightを無視させる部分を0に指定
-        :param e:
         :return:
         """
         # [バッチサイズ, Query長, 次元数]

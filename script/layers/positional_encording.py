@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch import Tensor
 
 """
-author by Iwasaki
+@autor Iwadon
 """
 
 class PostionalEncodingLayer(nn.Module):
@@ -14,7 +14,7 @@ class PostionalEncodingLayer(nn.Module):
     位置エンコーディングのためのレイヤー
     """
 
-    def __init__(self, model_dim: int, input_max_length: int, device: str):
+    def __init__(self, model_dim: int, input_len: int, device: str) -> Tensor:
         """
         :param model_dim: 隠れ層の次元数
         :param input_max_length: 最大入力長
@@ -23,13 +23,13 @@ class PostionalEncodingLayer(nn.Module):
         super(PostionalEncodingLayer, self).__init__()
 
         # 入力シーケンス数 * 次元数の行列を初期化
-        self.encoding = torch.zeros(input_max_length, model_dim, device=device)
+        self.encoding = torch.zeros(input_len, model_dim, device=device)
 
         # 勾配を計算しない
         self.encoding.requires_grad = False
 
         # 位置情報の等差数列作成[0, 1, 2,...,input_length-1]
-        pos = torch.arange(0, input_max_length, device=device)
+        pos = torch.arange(0, input_len, device=device)
 
         # 行列の形式を変換　input_lengthが256の場合　[256] -> [256, 1]
         pos = pos.float().unsqueeze(dim=1)
