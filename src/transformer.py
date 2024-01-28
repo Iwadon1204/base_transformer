@@ -11,54 +11,29 @@ from torch import nn, Tensor
 from encoder import Encoder
 from decoder import Decoder
 
+from util.model_setting import GlobalModelSetting
+from util import const
+
 
 class Transformer(nn.Module):
     """
     Transformerモデル
     """
 
-    def __init__(self, src_pad_idx: int, trg_pad_idx: int, enc_voc_size: int, dec_voc_size: int,
-                 d_model: int, n_head: int, input_len: int,
-                 ffn_hidden: int, n_layers, drop_prob: float, device: str):
-        """
-        :param src_pad_idx: 入力におけるPADトークンのID
-        :param trg_pad_idx: 出力におけるPADトークンのID
-        :param enc_voc_size: エンコーダーの語彙サイズ
-        :param dec_voc_size: デコーダーの語彙サイズ
-        :param d_model: モデルの次元数
-        :param n_head: ヘッドの数
-        :param input_len: 入力長
-        :param ffn_hidden: FFNレイヤーの層数
-        :param n_layers: Encoder/Decoderのレイヤー数
-        :param drop_prob: ドロップアウト率
-        :param device: 学習時に利用するデバイス
-        """
+    def __init__(self):
         super().__init__()
+        setting = GlobalModelSetting.get_instance()
         # 特殊トークンのIDを設定
-        self.src_pad_idx = src_pad_idx
-        self.trg_pad_idx = trg_pad_idx
+        self.__src_pad_idx = setting.get_setting(const.KEY_SRC_PAD_IDX)
+        self.__trg_pad_idx = setting.get_setting(const.KEY_TRG_PAD_IDX)
         # 計算時利用するデバイス
-        self.device = device
+        self.__device = setting.get_setting(const.KEY_USE_DEVICE)
 
         # エンコーダーモデル
-        self.encoder = Encoder(d_model=d_model,
-                               n_head=n_head,
-                               input_len=input_len,
-                               ffn_hidden=ffn_hidden,
-                               enc_voc_size=enc_voc_size,
-                               drop_prob=drop_prob,
-                               n_layers=n_layers,
-                               device=device)
+        self.__encoder = Encoder()
 
         # デコーダーモデル
-        self.decoder = Decoder(d_model=d_model,
-                               n_head=n_head,
-                               input_len=input_len,
-                               ffn_hidden=ffn_hidden,
-                               dec_voc_size=dec_voc_size,
-                               drop_prob=drop_prob,
-                               n_layers=n_layers,
-                               device=device)
+        self.__decoder = Decoder()
 
     def forward(self, src: Tensor, trg: Tensor) -> Tensor:
         """
@@ -71,9 +46,9 @@ class Transformer(nn.Module):
         # DecoderID列からマスクを作成
         trg_mask = self.make_dec_mask(trg)
         # エンコーダーモデルに入力
-        enc_out = self.encoder(src, src_mask)
+        enc_out = self.__encoder(src, src_mask)
         # エンコーダーからの出力、ターゲットをデコーダーモデルに入力
-        output = self.decoder(trg, enc_out, trg_mask, src_mask)
+        output = self.__decoder(trg, enc_out, trg_mask, src_mask)
         return output
 
     def make_enc_mask(self, src: Tensor) -> Tensor:
@@ -84,7 +59,7 @@ class Transformer(nn.Module):
         :return: マスク(Tensor) [batch * 1 * 1 * max_length]
         """
         # PADの箇所をMASKする
-        enc_mask = (src == self.src_pad_idx)
+        enc_mask = (src == self.__src_pad_idx)
         # 以降の処理のためにTensorの形式を変換
         enc_mask = enc_mask.unsqueeze(1).unsqueeze(2)
         return enc_mask
@@ -97,7 +72,7 @@ class Transformer(nn.Module):
         :return: [batch * 1 * max_length * max_length]
         """
         # PAD部分のマスク trg_pad_mask -> [batch * 1 * max_length * 1]
-        dec_pad_mask = (trg == self.trg_pad_idx).unsqueeze(1)
+        dec_pad_mask = (trg == self.__trg_pad_idx).unsqueeze(1)
 
         trg_len = trg.shape[1]
         # 入力長に応じた単位行列を作成
@@ -107,7 +82,7 @@ class Transformer(nn.Module):
         # ByteTensorに変換
         dec_sub_mask = upper_triangular_mat.type(torch.ByteTensor)
         # True/FalseのTensorに変換
-        dec_sub_mask = (dec_sub_mask == 0).to(self.device)
+        dec_sub_mask = (dec_sub_mask == 0).to(self.__device)
         # PADマスクと未知マスクのORをとる
         dec_mask = dec_pad_mask | dec_sub_mask
         # MultiHead用に形式変換
@@ -119,11 +94,11 @@ class Transformer(nn.Module):
         Encoderモデルを取得する
         :return: エンコーダーモデル
         """
-        return self.encoder
+        return self.__encoder
 
     def get_decoder(self) -> Decoder:
         """
         Decoderモデルを取得する
         :return: デコーダーモデル
         """
-        return self.decoder
+        return self.__decoder

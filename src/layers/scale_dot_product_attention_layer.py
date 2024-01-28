@@ -5,7 +5,6 @@
 """
 
 import math
-import torch
 from torch import nn, Tensor
 
 
@@ -16,7 +15,7 @@ class ScaleDotProductAttention(nn.Module):
 
     def __init__(self):
         super(ScaleDotProductAttention, self).__init__()
-        self.softmax = nn.Softmax(dim=-1)
+        self.__softmax = nn.Softmax(dim=-1)
 
     def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor = None):
         """
@@ -40,10 +39,10 @@ class ScaleDotProductAttention(nn.Module):
         if mask is not None:
             # maskすべき部分は-10000に
             # この処理を行うことで、attention_wightにて無視すべき部分を-∞に
-            logit = logit.masked_fill(mask, float('-inf'))
+            logit = logit.masked_fill(mask, float('-10000'))
         # softmax
         # ここで出力されるattention_weightが、センテンスにおける関連度/注目度である
-        attention_weight = self.softmax(logit)
+        attention_weight = self.__softmax(logit)
 
         # attention_weightとvalueの行列積
         output_attention = attention_weight @ v

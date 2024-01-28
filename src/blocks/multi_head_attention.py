@@ -10,33 +10,33 @@ import sys
 import torch.nn as nn
 from torch import Tensor
 
-sys.path.append("..")
 from layers.scale_dot_product_attention_layer import ScaleDotProductAttention
+from util.model_setting import GlobalModelSetting
+from util import const
+
 
 class MultiHeadAttentionBlock(nn.Module):
     """
     MaltiHeadAttentionを実現するためのブロック
     """
-    def __init__(self, d_model: int, n_head: int):
-        """
-        コンストラクタ
-        :param int d_model: モデルの次元数
-        :param int n_head: マルチヘッド数
-        """
+    def __init__(self):
         super(MultiHeadAttentionBlock, self).__init__()
-        # Head数
-        self.head_num = n_head
-        # Attentionレイヤー
-        self.attention = ScaleDotProductAttention()
+        setting = GlobalModelSetting.get_instance()
+        # モデルの次元数を取得
+        d_model = setting.get_setting(const.KEY_MODEL_DIM)
+        # ヘッド数を取得
+        self.__head_num = setting.get_setting(const.KEY_HEAD_NUM)
 
-        self.linear_q = nn.Linear(d_model, d_model)
-        self.linear_k = nn.Linear(d_model, d_model)
-        self.linear_v = nn.Linear(d_model, d_model)
-        self.w_concat = nn.Linear(d_model, d_model)
+        # Attentionレイヤー
+        self.__attention = ScaleDotProductAttention()
+
+        self.__linear_q = nn.Linear(d_model, d_model)
+        self.__linear_k = nn.Linear(d_model, d_model)
+        self.__linear_v = nn.Linear(d_model, d_model)
+        self.__w_concat = nn.Linear(d_model, d_model)
 
     def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor = None) -> Tensor:
         """
-
         :param q: Query [batch * input_len * d_model]
         :param k: Key [batch * input_len * d_model]
         :param v: Value [batch * input_len * d_model]
@@ -45,18 +45,18 @@ class MultiHeadAttentionBlock(nn.Module):
         """
         # 入力されたQuery, Key, Valueに全結合レイヤーを通し、指定されたHead数に分割する。
         # query, key, value : [batch * head_num * input_len * d_model/head_num]
-        query = self.split(self.linear_q(q))
-        key = self.split(self.linear_k(k))
-        value = self.split(self.linear_v(v))
+        query = self.split(self.__linear_q(q))
+        key = self.split(self.__linear_k(k))
+        value = self.split(self.__linear_v(v))
 
         # 各HeadのAttentionを計算
-        att_val, att_weight = self.attention(query, key, value, mask)
+        att_val, att_weight = self.__attention(query, key, value, mask)
 
         # 分割したものを結合
         out = self.concat(att_val)
 
         # 全結合レイヤーを通し最終的な本ブロックの出力とする
-        out = self.w_concat(out)
+        out = self.__w_concat(out)
         return out
 
     def split(self, tensor: Tensor) -> Tensor:
@@ -68,10 +68,10 @@ class MultiHeadAttentionBlock(nn.Module):
         batch_size, length, d_model = tensor.size()
 
         # headの数だけ分割
-        d_tensor = d_model // self.head_num
+        d_tensor = d_model // self.__head_num
 
         # 変形
-        tensor = tensor.view(batch_size, length, self.head_num, d_tensor).transpose(1, 2)
+        tensor = tensor.view(batch_size, length, self.__head_num, d_tensor).transpose(1, 2)
         return tensor
 
     def concat(self, tensor: Tensor) -> Tensor:
